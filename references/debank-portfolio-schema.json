@@ -1,0 +1,214 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "debank-portfolio-schema",
+  "title": "DeBank Portfolio Schema",
+  "description": "Schema for DeBank portfolio data scraped from debank.com",
+  "type": "object",
+  "required": ["metadata", "profile", "portfolio", "wallet", "protocols"],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "description": "Scraping metadata",
+      "required": ["source", "scrapeTimestamp", "profileUrl"],
+      "properties": {
+        "source": { "type": "string", "description": "Data source (debank.com)" },
+        "scrapeTimestamp": { "type": "string", "format": "date-time", "description": "When the data was scraped" },
+        "dataUpdatedAgo": { "type": "string", "description": "How long ago DeBank updated this data" },
+        "profileUrl": { "type": "string", "format": "uri", "description": "Full URL to the profile" }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "description": "User profile information",
+      "required": ["address"],
+      "properties": {
+        "address": { "type": "string", "pattern": "^0x[a-fA-F0-9]{40}$", "description": "Ethereum address" },
+        "web3Id": { "type": ["string", "null"], "description": "DeBank Web3 ID if set" },
+        "bio": { "type": ["string", "null"], "description": "User bio if set" },
+        "accountAgeDays": { "type": "integer", "description": "Account age in days" },
+        "social": {
+          "type": "object",
+          "properties": {
+            "followers": { "type": "integer" },
+            "following": { "type": "integer" }
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "properties": {
+            "tvf": { "type": "number", "description": "Total Value of Followers" },
+            "earnings": { "type": "number", "description": "Earnings metric" },
+            "hiOfferPrice": { "type": "number", "description": "Hi offer price in USD" }
+          }
+        }
+      }
+    },
+    "portfolio": {
+      "type": "object",
+      "description": "High-level portfolio summary",
+      "required": ["totalValueUsd", "chainAllocation", "protocolAllocation"],
+      "properties": {
+        "totalValueUsd": { "type": "number", "description": "Total portfolio value in USD" },
+        "change24h": {
+          "type": "object",
+          "properties": {
+            "percent": { "type": "number", "description": "24h change percentage" },
+            "direction": { "type": "string", "enum": ["up", "down", "unchanged"] }
+          }
+        },
+        "chainAllocation": {
+          "type": "array",
+          "description": "Value distribution across chains",
+          "items": {
+            "type": "object",
+            "required": ["chain", "valueUsd", "percentAllocation"],
+            "properties": {
+              "chain": { "type": "string", "description": "Chain name" },
+              "valueUsd": { "type": "number", "description": "Value on this chain in USD" },
+              "percentAllocation": { "type": "number", "minimum": 0, "maximum": 100 }
+            }
+          }
+        },
+        "protocolAllocation": {
+          "type": "array",
+          "description": "Value distribution across protocols",
+          "items": {
+            "type": "object",
+            "required": ["protocol", "valueUsd"],
+            "properties": {
+              "protocol": { "type": "string", "description": "Protocol name" },
+              "chain": { "type": "string", "description": "Chain where position is held" },
+              "valueUsd": { "type": "number" }
+            }
+          }
+        }
+      }
+    },
+    "wallet": {
+      "type": "object",
+      "description": "Wallet holdings (non-DeFi tokens)",
+      "required": ["totalValueUsd", "tokens"],
+      "properties": {
+        "totalValueUsd": { "type": "number" },
+        "tokens": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["symbol", "chain", "price", "amount", "valueUsd"],
+            "properties": {
+              "symbol": { "type": "string", "description": "Token symbol" },
+              "chain": { "type": "string", "description": "Chain the token is on" },
+              "contractAddress": { "type": "string", "description": "Token contract address (if not native)" },
+              "tokenUrl": { "type": "string", "description": "DeBank token URL path" },
+              "price": { "type": "number", "description": "Current token price in USD" },
+              "amount": { "type": "number", "description": "Token balance" },
+              "valueUsd": { "type": "number", "description": "Total value in USD" }
+            }
+          }
+        }
+      }
+    },
+    "protocols": {
+      "type": "array",
+      "description": "DeFi protocol positions",
+      "items": {
+        "type": "object",
+        "required": ["protocol", "chain", "totalValueUsd", "positions"],
+        "properties": {
+          "protocol": { "type": "string", "description": "Protocol name" },
+          "chain": { "type": "string", "description": "Chain" },
+          "appUrl": { "type": "string", "format": "uri", "description": "Protocol app URL" },
+          "totalValueUsd": { "type": "number" },
+          "positions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["type"],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": ["Lending", "Yield", "Liquidity Pool", "Staking", "Farming"],
+                  "description": "Position type"
+                },
+                "healthRate": { "type": "number", "description": "Health rate for lending positions" },
+                "healthRateDisplay": { "type": "string", "description": "Display string for health rate" },
+                "supplied": {
+                  "type": "array",
+                  "description": "Supplied/deposited assets in lending",
+                  "items": { "$ref": "#/$defs/tokenPosition" }
+                },
+                "borrowed": {
+                  "type": "array",
+                  "description": "Borrowed assets in lending",
+                  "items": { "$ref": "#/$defs/tokenPosition" }
+                },
+                "netValueUsd": { "type": "number", "description": "Net value (supplied - borrowed)" },
+                "pool": { "$ref": "#/$defs/tokenPosition", "description": "Yield pool position" },
+                "rewards": {
+                  "type": "array",
+                  "description": "Claimable rewards",
+                  "items": { "$ref": "#/$defs/tokenPosition" }
+                },
+                "poolId": { "type": "string", "description": "LP pool identifier" },
+                "poolPair": { "type": "string", "description": "LP pair display name" },
+                "tokens": {
+                  "type": "array",
+                  "description": "Tokens in the LP pair",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "symbol": { "type": "string" },
+                      "contractAddress": { "type": "string" }
+                    }
+                  }
+                },
+                "balance": {
+                  "type": "array",
+                  "description": "LP token balances",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "token": { "type": "string" },
+                      "amount": { "type": "number" }
+                    }
+                  }
+                },
+                "totalRewardsUsd": { "type": "number" },
+                "totalValueUsd": { "type": "number" },
+                "canWithdraw": { "type": "boolean" },
+                "canClaim": { "type": "boolean" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "description": "Calculated summary metrics",
+      "properties": {
+        "totalWalletValue": { "type": "number" },
+        "totalDeFiValue": { "type": "number" },
+        "totalSupplied": { "type": "number", "description": "Total supplied in lending protocols" },
+        "totalBorrowed": { "type": "number", "description": "Total borrowed from lending protocols" },
+        "totalLiquidityProvided": { "type": "number", "description": "Total in liquidity pools" },
+        "totalClaimableRewards": { "type": "number", "description": "Total claimable rewards" },
+        "activeProtocols": { "type": "array", "items": { "type": "string" } },
+        "activeChains": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+  "$defs": {
+    "tokenPosition": {
+      "type": "object",
+      "properties": {
+        "token": { "type": "string", "description": "Token symbol" },
+        "contractAddress": { "type": "string", "description": "Token contract address" },
+        "amount": { "type": "number", "description": "Token amount" },
+        "valueUsd": { "type": "number", "description": "USD value" },
+        "canWithdraw": { "type": "boolean" },
+        "canClaim": { "type": "boolean" }
+      }
+    }
+  }
+}

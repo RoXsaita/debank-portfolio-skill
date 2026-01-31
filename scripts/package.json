@@ -1,0 +1,25 @@
+{
+  "name": "debank-portfolio-scripts",
+  "version": "1.0.0",
+  "description": "SQLite persistence scripts for DeBank portfolio snapshots",
+  "type": "module",
+  "scripts": {
+    "save": "npx ts-node debank-snapshot-saver.ts"
+  },
+  "keywords": [
+    "debank",
+    "crypto",
+    "portfolio",
+    "sqlite"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^11.8.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.0"
+  }
+}
